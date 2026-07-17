@@ -1,0 +1,3 @@
+[submodule "project-front-end"]
+	path = project-front-end
+	url = https://github.com/AI-Light-Project/DiGraphFin-for-display.git
