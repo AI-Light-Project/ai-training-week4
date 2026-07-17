@@ -1,3 +1,7 @@
 [submodule "project-front-end"]
 	path = project-front-end
 	url = https://github.com/AI-Light-Project/DiGraphFin-for-display.git
+
+[submodule "graph-rag"]
+	path = graph-rag
+	url = https://github.com/AI-Light-Project/GraphRAG.git
