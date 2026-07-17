@@ -1,14 +1,16 @@
 # 0717-project
 
-**0717-project** 是一个基于图神经网络的金融风控欺诈检测系统。
+**0717-project** 是一个基于图神经网络的金融风控欺诈检测系统，包含完整的后端模型训练、图数据分析，以及配套的前端可视化展示和图数据查询接口。
 
-该项目旨在通过融合多种图神经网络模型与传统机器学习方法，构建一套高效、准确的欺诈检测解决方案，帮助金融机构识别异常交易行为并降低信用风险。
+该项目旨在通过融合多种图神经网络模型与传统机器学习方法，构建一套高效、准确的欺诈检测解决方案，帮助金融机构识别异常交易行为并降低信用风险。项目采用模块化架构，包含两个子仓库：`project-front-end`（前端展示页面）和 `graph-rag`（Neo4j 图数据查询接口），共同构成完整的端到端金融风控系统。
 
 ---
 
 ## 目录
 
 - [功能一览](#功能一览)
+- [子仓库说明](#子仓库说明)
+- [数据来源](#数据来源)
 - [特征工程模块](#特征工程模块)
 - [模型训练模块](#模型训练模块)
 - [模型融合模块](#模型融合模块)
@@ -33,6 +35,117 @@
 | 特征重要性 | XGBoost+LightGBM综合评分与特征筛选 |
 | ROC曲线可视化 | 多模型ROC对比与TPR/FPR数据导出 |
 | 深度图分析 | 连通分量、中心性、社区审计、时间窗口分析 |
+| 前端展示 | 交互式数据看板、模型结果可视化、风险分布图 |
+| 图数据查询 | Neo4j图数据库访问接口、Graph RAG问答系统 |
+
+---
+
+## 子仓库说明
+
+项目采用 Git Submodule 管理模块化组件，包含两个子仓库：
+
+### project-front-end
+
+**项目前端展示页面**，提供交互式数据看板和可视化界面。
+
+| 属性 | 说明 |
+| --- | --- |
+| 远端仓库 | https://github.com/AI-Light-Project/DiGraphFin-for-display.git |
+| 功能定位 | 展示后端训练结果、模型评估指标、风险分数分布、图数据可视化 |
+| 技术栈 | React、ECharts、TailwindCSS |
+| 数据来源 | 读取 `output/` 目录下的 JSON/CSV/PNG 文件 |
+
+### graph-rag
+
+**图数据查询与问答系统**，为前端提供 Neo4j 图数据库的访问接口和 RAG（检索增强生成）功能。
+
+| 属性 | 说明 |
+| --- | --- |
+| 远端仓库 | https://github.com/AI-Light-Project/GraphRAG.git |
+| 功能定位 | Neo4j 图数据导入、图数据查询API、Graph RAG问答界面 |
+| 核心脚本 | `import_dgraphfin_to_neo4j.py`（数据导入）、`verify_import.py`（验证） |
+| 技术栈 | Python、Neo4j、LangChain、FastAPI |
+| 数据来源 | 将 DGraphFin 数据导入 Neo4j，提供图数据查询能力 |
+
+**架构关系**：`graph-rag` 负责将图数据导入 Neo4j 并提供查询接口，`project-front-end` 可通过 API 访问 Neo4j 查询结果，实现图数据的交互式探索与分析。
+
+**Important:** 克隆仓库时需使用 `--recurse-submodules` 参数，确保子仓库同步：
+
+```bash
+git clone --recurse-submodules https://github.com/AI-Light-Project/ai-training-week4.git
+```
+
+---
+
+## 数据来源
+
+本项目使用的是公开数据集 **DGraphFin**（Deep Graph Finance），这是一个专门用于金融风控欺诈检测研究的大规模图数据集。
+
+### 数据集简介
+
+DGraphFin 数据集包含：
+
+| 属性 | 说明 |
+| --- | --- |
+| 节点数 | 约 370 万 |
+| 边数 | 约 430 万 |
+| 边类型数 | 11 种 |
+| 节点特征维度 | 17 维 |
+| 时间跨度 | 821 天 |
+| 异常节点比例 | 约 1.27% |
+
+### 数据获取方式
+
+**官方网站下载**：
+
+访问 DGraphFin 官方数据集页面下载：
+- GitHub：https://github.com/mengzhanggao/DGraphFin
+- 或通过 PyTorch Geometric 数据集接口直接加载
+
+**下载命令**：
+
+```bash
+# 通过 GitHub 克隆数据集仓库
+git clone https://github.com/mengzhanggao/DGraphFin.git
+
+# 复制数据文件到项目 data/ 目录
+cp -r DGraphFin/data/* 0717-proj/data/
+```
+
+**数据文件格式**：
+
+项目支持两种数据格式：
+
+| 格式 | 文件 | 适用数据集 |
+| --- | --- | --- |
+| `.pt` | `dgraphfin_sample.pt` | sample（5万节点） |
+| `.npz` | `dgraphfin.npz` | full（370万节点） |
+
+### 数据放置要求
+
+下载完成后，数据文件需放置于以下目录结构：
+
+```
+0717-proj/
+├── data/
+│   ├── dgraphfin_sample/
+│   │   └── dgraphfin_sample.pt
+│   └── DGraphFin/
+│       └── dgraphfin.npz
+```
+
+**Note:** `data/` 目录已被添加到 `.gitignore` 文件中，不会被 Git 追踪。
+
+### 数据预处理
+
+项目 `s1_data_features.py` 模块会自动对原始数据进行以下预处理：
+
+1. **特征标准化**：将原始特征 Z-score 标准化到均值为0、标准差为1
+2. **边类型处理**：提取 11 种边类型的度特征（出度 + 入度）
+3. **时间特征提取**：从边时间戳中提取统计特征（计数、均值、标准差、跨度等）
+4. **图结构分析**：计算中心性指标、社区发现、图嵌入等
+
+**Tip:** 首次运行时系统会自动生成中间缓存文件，后续运行可复用缓存加速处理。
 
 ---
 
@@ -242,9 +355,20 @@ python main.py --data sample --stages 6 --features full
 
 ### 仓库克隆
 
+**注意**：项目包含 Git Submodule，克隆时需使用 `--recurse-submodules` 参数：
+
 ```bash
-git clone <repository-url>
+# 克隆主仓库及所有子仓库
+git clone --recurse-submodules https://github.com/AI-Light-Project/ai-training-week4.git
 cd 0717-proj
+```
+
+**如果已克隆但子仓库为空**：
+
+```bash
+# 初始化并更新子仓库
+git submodule init
+git submodule update --recursive
 ```
 
 ### 依赖安装
@@ -309,6 +433,7 @@ python main.py --data sample --stages 2 --features structural full
 ├── requirements.txt          # 依赖列表
 ├── select_important_features.py  # 特征选择脚本
 ├── .gitignore                # Git忽略文件
+├── .gitmodules               # Git Submodule配置
 ├── README.md                 # 项目文档
 │
 ├── models/                   # 模型定义
@@ -330,6 +455,18 @@ python main.py --data sample --stages 2 --features structural full
 ├── s4_interpret.py           # 阶段4：可解释性分析（GNNExplainer、子图）
 ├── s5_feature_importance.py  # 阶段5：特征重要性分析
 ├── s6_visualization.py       # 阶段6：ROC曲线可视化
+│
+├── project-front-end/        # [Git Submodule] 前端展示页面
+│   ├── src/                  # React源码
+│   ├── public/               # 静态资源
+│   └── package.json          # 前端依赖
+│
+├── graph-rag/                # [Git Submodule] 图数据查询与问答系统
+│   ├── graphrag/             # 核心代码
+│   ├── docs/                 # 文档
+│   ├── import_dgraphfin_to_neo4j.py  # Neo4j数据导入脚本
+│   ├── verify_import.py      # 导入验证脚本
+│   └── pyproject.toml        # Python依赖
 │
 ├── data/                     # 数据集（.gitignore忽略）
 │   ├── dgraphfin_sample/     # 采样数据集（5万节点）
@@ -354,9 +491,3 @@ python main.py --data sample --stages 2 --features structural full
 本项目采用 **MIT 许可证**。
 
 MIT许可证允许自由使用、复制、修改和分发本项目的代码，无论是否用于商业目的。使用者只需保留原始版权声明和许可证声明即可。具体条款请参见项目根目录下的 LICENSE 文件。
-
----
-
-**项目维护者:** Developer  
-**联系方式:** developer@example.com  
-**最后更新:** 2026年7月
